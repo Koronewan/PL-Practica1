@@ -76,13 +76,52 @@ public class AnalizadorLexico
     {
         switch(estado)
         {
-            default: return 0;
+            case 0:
+                if(c == '/') return 1;
+                else if(c == '(') return 4;
+                else if(c == ')') return 5;
+                else if(c == ',') return 6;
+                else if(c == '&') return 7;
+                else if(c == '{') return 8;
+                else if(c == '}') return 9;
+                else if(c == '=') return 10;
+                else if(c == ';') return 11;
+                else if(c == '-' || c == '+') return 12;
+                else if(c >= '0' && c <= '9') return 13;
+                else if(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') return 18;
+                return -1;
+            case 1:
+                if(c == '*') return 2;
+                else return -1;
+            case 2:
+                if(c == '*') return 3;
+                else return 2;
+            case 3:
+                if(c == '/') return 0;
+                else return 2;
+            case 13:
+                if(c >= '0' && c <= '9') return 13;
+                else if(c == '.') return 15;
+                else return 14;
+            case 15:
+                if(c >= '0' && c <= '9') return 16;
+                else return -1;
+            case 16:
+                if(c >= '0' && c <= '9') return 16;
+                else return 17;
+            case 18:
+                if(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9') return 19;
+                else return -1;
+            default:
+                return -1;
         }
     }
 
     private boolean esFinal(int estado)
     {
-        return true;
+        return estado == 4 || estado == 5 || estado == 6 || estado == 7 || estado == 8
+                || estado == 9 || estado == 10 || estado == 11 || estado == 12
+                || estado == 14 || estado == 17 || estado == 19;
     }
 
     private void devolverCaracteres(int estado)
@@ -91,8 +130,12 @@ public class AnalizadorLexico
         {
             switch(estado)
             {
+                case 14:
+                case 17:
+                case 19:
+                    this.raf.seek(this.raf.getFilePointer() - 1);
+                    break;
                 default:
-                this.raf.seek(this.raf.getFilePointer() - 1);
             }
         }
         catch (IOException e)
