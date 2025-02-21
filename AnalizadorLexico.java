@@ -15,12 +15,22 @@ public class AnalizadorLexico
 
     public Token siguienteToken()
     {
-        char caracter = this.leer();
+        char caracter;
+        do
+        {
+            caracter = this.leer();
+        } while(caracter == ' ' || caracter == '\t');
+
+        if(caracter == 15)
+            return new Token(Token.EOF);
+
+        StringBuilder lexema = new StringBuilder(caracter + "");
         int estado = 0;
 
         do
         {
             int nuevo = delta(estado, caracter);
+
             if(nuevo == -2)
             {
                 System.out.println("Error lexico: fin de fichero inesperado");
@@ -33,22 +43,21 @@ public class AnalizadorLexico
 
                 System.exit(-1);
             }
-            else if(this.esFinal(estado))
+            else if(this.esFinal(nuevo))
             {
-                devolverCaracteres(estado);
-                return new Token();
+                this.devolverCaracteres(nuevo, lexema);
+                return this.devolverToken(nuevo, lexema);
             }
             else
             {
                 estado = nuevo;
                 caracter = this.leer();
-                this.columna++;
 
-                if(caracter == '\n')
+                lexema.append(caracter);
+
+                if (nuevo == 0)
                 {
-                    this.fila++;
-                    this.columna = 1;
-                    caracter = this.leer();
+                    lexema = new StringBuilder(caracter + "");
                 }
             }
         } while (true);
@@ -56,10 +65,49 @@ public class AnalizadorLexico
 
     }
 
+    private Token devolverToken(int estado, StringBuilder lexema)
+    {
+        return switch (estado)
+        {
+            case 4 -> new Token(Token.PARI, this.fila, this.columna - lexema.toString().length(), lexema.toString());
+            case 5 -> new Token(Token.PARD, this.fila, this.columna - lexema.toString().length(), lexema.toString());
+            case 6 -> new Token(Token.COMA, this.fila, this.columna - lexema.toString().length(), lexema.toString());
+            case 7 -> new Token(Token.AMP, this.fila, this.columna - lexema.toString().length(), lexema.toString());
+            case 8 -> new Token(Token.LLAVEI, this.fila, this.columna - lexema.toString().length(), lexema.toString());
+            case 9 -> new Token(Token.LLAVED, this.fila, this.columna - lexema.toString().length(), lexema.toString());
+            case 10 -> new Token(Token.ASIG, this.fila, this.columna - lexema.toString().length(), lexema.toString());
+            case 11 -> new Token(Token.PYC, this.fila, this.columna - lexema.toString().length(), lexema.toString());
+            case 12 -> new Token(Token.OPAS, this.fila, this.columna - lexema.toString().length(), lexema.toString());
+            case 14 -> new Token(Token.ENTERO, this.fila, this.columna - lexema.toString().length(), lexema.toString());
+            case 17 -> new Token(Token.REAL, this.fila, this.columna - lexema.toString().length(), lexema.toString());
+            case 19 -> switch (lexema.toString())
+            {
+                case "float" -> new Token(Token.FLOAT, this.fila, this.columna - lexema.toString().length(), lexema.toString());
+                case "int" -> new Token(Token.INT, this.fila, this.columna - lexema.toString().length(), lexema.toString());
+                case "if" -> new Token(Token.IF, this.fila, this.columna - lexema.toString().length(), lexema.toString());
+                default -> new Token(Token.ID, this.fila, this.columna - lexema.toString().length(), lexema.toString());
+            };
+            default -> null;
+        };
+    }
+
     private char leer()
     {
-        try{
-            return (char)this.raf.read();
+        try
+        {
+            char c;
+            do{
+                c = (char)this.raf.readByte();
+                this.columna++;
+
+                if(c == '\n')
+                {
+                    this.fila++;
+                    this.columna = 1;
+                }
+            } while (c == '\n');
+
+            return c;
         }
         catch (EOFException e)
         {
@@ -110,8 +158,8 @@ public class AnalizadorLexico
                 if(c >= '0' && c <= '9') return 16;
                 else return 17;
             case 18:
-                if(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9') return 19;
-                else return -1;
+                if(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9') return 18;
+                else return 19;
             default:
                 return -1;
         }
@@ -124,7 +172,7 @@ public class AnalizadorLexico
                 || estado == 14 || estado == 17 || estado == 19;
     }
 
-    private void devolverCaracteres(int estado)
+    private void devolverCaracteres(int estado, StringBuilder lexema)
     {
         try
         {
@@ -134,6 +182,8 @@ public class AnalizadorLexico
                 case 17:
                 case 19:
                     this.raf.seek(this.raf.getFilePointer() - 1);
+                    lexema.setLength(lexema.length() - 1);
+                    columna--;
                     break;
                 default:
             }

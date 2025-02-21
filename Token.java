@@ -47,6 +47,19 @@ public class Token {
             REAL		= 14,
             EOF		= 15;
 
+    public Token(int tipo, int fila, int columna, String string)
+    {
+        this.tipo = tipo;
+        this.fila = fila;
+        this.columna = columna;
+        this.lexema = string;
+    }
+
+    public Token(int eof)
+    {
+        this.tipo = eof;
+    }
+
     public String toString(){
         return nombreToken.get(tipo);
     }
